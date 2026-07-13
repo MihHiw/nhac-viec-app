@@ -895,8 +895,16 @@
         chatEl.appendChild(wrap);
       }
       function addTicket(task) {
+        let extraClass = "";
+        if (task.done) {
+          extraClass = " done";
+        } else if (task.time) {
+          const d2 = new Date(task.date);
+          d2.setHours(task.time.h, task.time.m, 0, 0);
+          if (d2.getTime() < Date.now()) extraClass = " late";
+        }
         const wrap = document.createElement("div");
-        wrap.className = "ticket" + (task.done ? " done" : "");
+        wrap.className = "ticket" + extraClass;
         wrap.dataset.id = task.id;
         const d = new Date(task.date);
         wrap.innerHTML = `
@@ -1070,7 +1078,9 @@
               body: `\u0110\u1EBFn gi\u1EDD r\u1ED3i (${String(t.time.h).padStart(2, "0")}:${String(t.time.m).padStart(2, "0")})`,
               id: stringToId(t.id),
               schedule: { at: d, allowWhileIdle: true },
-              channelId: "nhac_oi_alerts"
+              channelId: "nhac_oi_alerts",
+              group: t.id,
+              groupSummary: false
             });
           }
         });
@@ -1092,13 +1102,38 @@
                 body,
                 id: Math.floor(Math.random() * 1e6),
                 schedule: { at: new Date(Date.now() + 100) },
-                channelId: "nhac_oi_alerts"
+                channelId: "nhac_oi_alerts",
+                group: "test_" + Date.now()
               }
             ]
           });
         } else if ("Notification" in window && Notification.permission === "granted") {
           new Notification(title, { body, icon: "icon-192.svg" });
         }
+        showToast(title, body, "sys_" + Date.now());
+      }
+      function showToast(title, body, id) {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+        if (id && document.getElementById("toast_" + id)) return;
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        if (id) toast.id = "toast_" + id;
+        toast.innerHTML = `
+    <div class="t-icon">\u{1F514}</div>
+    <div class="t-content">
+      <div class="t-title">${escapeHtml(title)}</div>
+      <div class="t-body">${escapeHtml(body)}</div>
+    </div>
+    <button class="t-close">\u2715</button>
+  `;
+        container.appendChild(toast);
+        const closeToast = () => {
+          toast.style.animation = "fadeOut 0.3s ease forwards";
+          setTimeout(() => toast.remove(), 300);
+        };
+        toast.querySelector(".t-close").onclick = closeToast;
+        setTimeout(closeToast, 15e3);
       }
       async function fireWebNotification(title, body) {
         if ("Notification" in window && Notification.permission === "granted") {
@@ -1126,11 +1161,16 @@
         }
       };
       refreshNotifBtn();
+      if (Capacitor.isNative) {
+        LocalNotifications.addListener("localNotificationReceived", (notification) => {
+          showToast(notification.title, notification.body, "nat_" + notification.id);
+        });
+      }
       async function checkDueTasksWeb() {
-        if (Capacitor.isNative) return;
         const granted = await checkNotifPerm();
         if (!granted) return;
         const now = /* @__PURE__ */ new Date();
+        let changed = false;
         tasks.forEach((t) => {
           if (t.done || t.notified) return;
           const d = new Date(t.date);
@@ -1144,13 +1184,19 @@
             const late = nowMinutes - dueMinutes > 3;
             const title = "\u23F0 " + t.label;
             const body = (late ? "Tr\u1EC5 m\u1EA5t r\u1ED3i, l\u1EBD ra l\xE0 " : "\u0110\u1EBFn gi\u1EDD r\u1ED3i (") + String(t.time.h).padStart(2, "0") + ":" + String(t.time.m).padStart(2, "0") + (late ? "" : ")");
-            fireWebNotification(title, body);
+            showToast(title, body, "due_" + t.id);
+            if (!Capacitor.isNative) {
+              fireWebNotification(title, body);
+            }
             t.notified = true;
-            saveTasks(tasks);
+            changed = true;
           }
         });
+        if (changed) {
+          saveTasks(tasks);
+        }
       }
-      setInterval(checkDueTasksWeb, 3e4);
+      setInterval(checkDueTasksWeb, 15e3);
       checkDueTasksWeb();
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") checkDueTasksWeb();

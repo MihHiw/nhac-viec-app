@@ -126,8 +126,16 @@ function addBubble(role, text, time){
 }
 
 function addTicket(task){
+  let extraClass = '';
+  if (task.done) {
+    extraClass = ' done';
+  } else if (task.time) {
+    const d = new Date(task.date);
+    d.setHours(task.time.h, task.time.m, 0, 0);
+    if (d.getTime() < Date.now()) extraClass = ' late';
+  }
   const wrap = document.createElement('div');
-  wrap.className = 'ticket' + (task.done ? ' done' : '');
+  wrap.className = 'ticket' + extraClass;
   wrap.dataset.id = task.id;
   const d = new Date(task.date);
   wrap.innerHTML = `
@@ -307,7 +315,9 @@ async function syncNativeNotifications() {
         body: `Đến giờ rồi (${String(t.time.h).padStart(2,'0')}:${String(t.time.m).padStart(2,'0')})`,
         id: stringToId(t.id),
         schedule: { at: d, allowWhileIdle: true },
-        channelId: 'nhac_oi_alerts'
+        channelId: 'nhac_oi_alerts',
+        group: t.id,
+        groupSummary: false
       });
     }
   });
@@ -333,13 +343,45 @@ async function fireNotification(title, body) {
           body: body,
           id: Math.floor(Math.random() * 1000000),
           schedule: { at: new Date(Date.now() + 100) },
-          channelId: 'nhac_oi_alerts'
+          channelId: 'nhac_oi_alerts',
+          group: 'test_' + Date.now()
         }
       ]
     });
   } else if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(title, { body: body, icon: 'icon-192.svg' });
   }
+  showToast(title, body, 'sys_'+Date.now());
+}
+
+// Custom Toast notification UI
+function showToast(title, body, id) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  if (id && document.getElementById('toast_' + id)) return; // Prevent duplicate toast
+  
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  if (id) toast.id = 'toast_' + id;
+  toast.innerHTML = `
+    <div class="t-icon">🔔</div>
+    <div class="t-content">
+      <div class="t-title">${escapeHtml(title)}</div>
+      <div class="t-body">${escapeHtml(body)}</div>
+    </div>
+    <button class="t-close">✕</button>
+  `;
+  container.appendChild(toast);
+  
+  const closeToast = () => {
+    toast.style.animation = 'fadeOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  };
+  
+  toast.querySelector('.t-close').onclick = closeToast;
+  
+  // Auto close after 15 seconds
+  setTimeout(closeToast, 15000);
 }
 
 async function fireWebNotification(title, body) {
@@ -369,12 +411,19 @@ notifBtn.onclick = async () => {
 };
 refreshNotifBtn();
 
+if (Capacitor.isNative) {
+  LocalNotifications.addListener('localNotificationReceived', (notification) => {
+    // Non-blocking in-app toast
+    showToast(notification.title, notification.body, 'nat_' + notification.id);
+  });
+}
+
 // Web-only fallback for real-time checks
 async function checkDueTasksWeb(){
-  if (Capacitor.isNative) return;
   const granted = await checkNotifPerm();
   if(!granted) return;
   const now = new Date();
+  let changed = false;
   tasks.forEach(t => {
     if(t.done || t.notified) return;
     const d = new Date(t.date);
@@ -386,13 +435,19 @@ async function checkDueTasksWeb(){
       const late = nowMinutes - dueMinutes > 3;
       const title = '⏰ ' + t.label;
       const body = (late ? 'Trễ mất rồi, lẽ ra là ' : 'Đến giờ rồi (') + String(t.time.h).padStart(2,'0')+':'+String(t.time.m).padStart(2,'0') + (late ? '' : ')');
-      fireWebNotification(title, body);
+      showToast(title, body, 'due_' + t.id);
+      if(!Capacitor.isNative) {
+        fireWebNotification(title, body);
+      }
       t.notified = true;
-      saveTasks(tasks);
+      changed = true;
     }
   });
+  if (changed) {
+    saveTasks(tasks);
+  }
 }
-setInterval(checkDueTasksWeb, 30000);
+setInterval(checkDueTasksWeb, 15000);
 checkDueTasksWeb();
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') checkDueTasksWeb(); });
 

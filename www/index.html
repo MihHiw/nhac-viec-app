@@ -141,7 +141,7 @@ header p{
   flex-direction:column;
   gap:12px;
 }
-.msg{max-width:86%;display:flex;flex-direction:column;gap:4px;}
+.msg{max-width:86%;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
 .msg.user{align-self:flex-end;align-items:flex-end;}
 .msg.bot{align-self:flex-start;align-items:flex-start;}
 .bubble{
@@ -165,12 +165,24 @@ header p{
 /* ticket-style task card */
 .ticket{
   display:flex;
+  flex-shrink:0;
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:14px;
   overflow:hidden;
+  margin-top:4px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.05);
   max-width:86%;
   align-self:flex-start;
+}
+.ticket.done{opacity:0.6;}
+.ticket.late:not(.done) {
+  border-color: #ff4d4f;
+  background: #fff1f0;
+}
+.ticket.late:not(.done) .meta {
+  color: #cf1322;
+  font-weight: 600;
 }
 .ticket .stub{
   background:var(--accent-soft);
@@ -245,9 +257,70 @@ header p{
   line-height:1.6;
 }
 .empty-hint b{color:var(--text);}
+
+/* Toast Notifications */
+#toast-container {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 400px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  pointer-events: auto;
+  animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.toast .t-icon {
+  font-size: 24px;
+}
+.toast .t-content {
+  flex: 1;
+}
+.toast .t-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+.toast .t-body {
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.toast .t-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  padding: 0;
+  cursor: pointer;
+}
+@keyframes slideDown {
+  0% { transform: translateY(-50px) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
 </style>
 </head>
 <body>
+<div id="toast-container"></div>
 <div id="app">
 
   <header>
