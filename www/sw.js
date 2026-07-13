@@ -1,4 +1,4 @@
-const CACHE = 'nhacoi-v2';
+const CACHE = 'nhacoi-v3';
 const FILES = ['./landing.html', './index.html', './manifest.json', './icon.svg', './icon-192.svg', './icon-512.svg'];
 
 self.addEventListener('install', e => {
@@ -14,6 +14,11 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Bỏ qua chặn Service Worker cho các file tải xuống (như APK)
+  if (e.request.url.endsWith('.apk')) {
+    return;
+  }
+  
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
   );
