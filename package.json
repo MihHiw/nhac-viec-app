@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "esbuild www/app.js --bundle --outfile=www/bundle.js"
+    "build": "npx esbuild www/app.js --bundle --outfile=www/bundle.js",
+    "release": "node release.js"
   },
   "repository": {
     "type": "git",

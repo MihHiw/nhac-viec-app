@@ -1215,6 +1215,10 @@
           }
         }
       })();
+      if (!Capacitor.isNative) {
+        const apkBtn = document.getElementById("apk-download-btn");
+        if (apkBtn) apkBtn.style.display = "flex";
+      }
       fullRender();
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
