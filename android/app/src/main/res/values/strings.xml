@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nhac Oi</string>
+    <string name="title_activity_main">Nhac Oi</string>
+    <string name="package_name">com.borny.nhacoi</string>
+    <string name="custom_url_scheme">com.borny.nhacoi</string>
+</resources>
