@@ -1,5 +1,5 @@
-const CACHE = 'nhacoi-v1';
-const FILES = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.svg', './icon-512.svg'];
+const CACHE = 'nhacoi-v2';
+const FILES = ['./landing.html', './index.html', './manifest.json', './icon.svg', './icon-192.svg', './icon-512.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
