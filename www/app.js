@@ -468,10 +468,6 @@ document.addEventListener('visibilitychange', () => { if(document.visibilityStat
 })();
 
 /* ============ INIT ============ */
-if (!Capacitor.isNative) {
-  const apkBtn = document.getElementById('apk-download-btn');
-  if (apkBtn) apkBtn.style.display = 'flex';
-}
 fullRender();
 
 /* Service worker (offline + cài lên màn hình chính) */

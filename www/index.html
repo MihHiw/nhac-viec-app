@@ -103,25 +103,6 @@ header p{
 }
 #notif-btn.on{color:var(--today);border-color:rgba(79,189,186,.4);}
 
-/* ---------- APK Download Banner ---------- */
-#apk-download-btn{
-  display:none; /* hidden by default, JS will show if on Web */
-  align-items:center;
-  gap:12px;
-  background: linear-gradient(135deg, rgba(79,189,186,.08) 0%, rgba(79,189,186,.02) 100%);
-  border-bottom: 1px solid rgba(79,189,186,.15);
-  padding: 12px 18px;
-  text-decoration: none;
-  color: var(--text);
-  flex-shrink: 0;
-}
-#apk-download-btn:active { background: rgba(79,189,186,.1); }
-#apk-download-btn .apk-icon { font-size: 26px; }
-#apk-download-btn .apk-text { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-#apk-download-btn .apk-text strong { color: var(--today); font-size: 14px; font-weight: 600; letter-spacing: 0.2px; }
-#apk-download-btn .apk-text span { color: var(--text-muted); font-size: 11.5px; }
-#apk-download-btn .apk-arrow { font-size: 20px; color: var(--today); }
-
 /* ---------- Today strip ---------- */
 #today-strip{
   flex-shrink:0;
@@ -352,15 +333,6 @@ header p{
     </div>
     <button id="notif-btn">🔔 Bật nhắc</button>
   </header>
-
-  <a href="app-debug.apk" download="NhacViec.apk" id="apk-download-btn">
-    <div class="apk-icon">🤖</div>
-    <div class="apk-text">
-      <strong>Tải App Android (APK)</strong>
-      <span>Nhận thông báo nền, không lo trễ hẹn</span>
-    </div>
-    <div class="apk-arrow">📥</div>
-  </a>
 
   <div id="today-strip"><div class="label">Hôm nay</div><div class="today-list"></div></div>
 
