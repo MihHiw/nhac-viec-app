@@ -53,6 +53,11 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
+      <script dangerouslySetInnerHTML={{ __html: `
+        if (navigator.userAgent.includes('Capacitor') || (window.Capacitor && window.Capacitor.isNative)) {
+          window.location.replace('app/index.html');
+        }
+      `}} />
     </>
   );
 }
