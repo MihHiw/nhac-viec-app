@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
 
-let Capacitor, LocalNotifications, TextToSpeech;
+let Capacitor, BackgroundTts, TextToSpeech;
 
 const STORE_KEY = 'nhacoi_tasks_v2';
 
@@ -90,13 +90,11 @@ export default function TimetableApp() {
 
   useEffect(() => {
     // Dynamic imports
-    import('@capacitor/core').then(mod => { Capacitor = mod.Capacitor; });
-    import('@capacitor-community/text-to-speech').then(mod => { TextToSpeech = mod.TextToSpeech; });
-    import('@capacitor/local-notifications').then(mod => { 
-      LocalNotifications = mod.LocalNotifications; 
-      // Request permission immediately on load
-      LocalNotifications.requestPermissions();
+    import('@capacitor/core').then(mod => { 
+      Capacitor = mod.Capacitor;
+      BackgroundTts = Capacitor.Plugins.BackgroundTts;
     });
+    import('@capacitor-community/text-to-speech').then(mod => { TextToSpeech = mod.TextToSpeech; });
 
     // Load tasks
     try {
@@ -144,19 +142,8 @@ export default function TimetableApp() {
   });
 
   const scheduleNotifications = async (tasksList) => {
-    if (!LocalNotifications) return;
+    if (!BackgroundTts) return;
     try {
-      let permStatus = await LocalNotifications.checkPermissions();
-      if (permStatus.display !== 'granted') {
-        permStatus = await LocalNotifications.requestPermissions();
-        if (permStatus.display !== 'granted') return; // Cannot schedule
-      }
-      
-      const pending = await LocalNotifications.getPending();
-      if (pending.notifications.length > 0) {
-        await LocalNotifications.cancel({ notifications: pending.notifications });
-      }
-
       const now = new Date();
       const toSchedule = tasksList.filter(t => {
         if (t.done || t.notified || !t.time) return false;
@@ -168,18 +155,21 @@ export default function TimetableApp() {
         d.setHours(t.time.h, t.time.m, 0, 0);
         return {
           id: parseInt(t.id.slice(-8), 10) || Math.floor(Math.random() * 1000000),
-          title: 'Nhắc nhở công việc!',
-          body: t.label,
-          schedule: { at: d },
-          smallIcon: "ic_stat_icon_config_sample"
+          text: t.label,
+          at: d.getTime()
         };
       });
 
+      // We should ideally pass all ids to cancel, or the plugin should handle it
+      // Let's cancel all tasks that are done or old
+      const allIds = tasksList.map(t => parseInt(t.id.slice(-8), 10) || 0).filter(id => id > 0);
+      await BackgroundTts.cancelAll({ ids: allIds });
+
       if (toSchedule.length > 0) {
-        await LocalNotifications.schedule({ notifications: toSchedule });
+        await BackgroundTts.schedule({ tasks: toSchedule });
       }
     } catch(e) {
-      console.error('LocalNotifications error', e);
+      console.error('BackgroundTts error', e);
     }
   };
 
