@@ -5,6 +5,7 @@ import styles from './page.module.css';
 let Capacitor, BackgroundTts, TextToSpeech;
 
 const STORE_KEY = 'nhacoi_tasks_v2';
+const STORE_KEY_REPEATS = 'nhacoi_repeats_v1';
 
 const WEEKDAYS = { 'chủ nhật':0, 'cn':0, 'thứ 2':1,'thứ hai':1,'thứ 3':2,'thứ ba':2,'thứ 4':3,'thứ tư':3,
   'thứ 5':4,'thứ năm':4,'thứ 6':5,'thứ sáu':5,'thứ 7':6,'thứ bảy':6 };
@@ -82,6 +83,9 @@ export default function TimetableApp() {
   const [voiceActive, setVoiceActive] = useState(true);
   const [activeAlert, setActiveAlert] = useState(null);
   
+  const [repeats, setRepeats] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
+
   const [activeTab, setActiveTab] = useState('today');
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   
@@ -100,6 +104,8 @@ export default function TimetableApp() {
     try {
       const stored = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
       setTasks(stored);
+      const storedRepeats = parseInt(localStorage.getItem(STORE_KEY_REPEATS), 10);
+      if (storedRepeats) setRepeats(storedRepeats);
     } catch(e) {}
 
     // Init Speech Recognition
@@ -156,7 +162,8 @@ export default function TimetableApp() {
         return {
           id: parseInt(t.id.slice(-8), 10) || Math.floor(Math.random() * 1000000),
           text: t.label,
-          at: d.getTime()
+          at: d.getTime(),
+          repeats: repeats
         };
       });
 
@@ -178,7 +185,12 @@ export default function TimetableApp() {
     if (tasks.length > 0) {
       scheduleNotifications(tasks);
     }
-  }, [tasks]);
+  }, [tasks, repeats]);
+
+  const handleRepeatsChange = (val) => {
+    setRepeats(val);
+    localStorage.setItem(STORE_KEY_REPEATS, val.toString());
+  };
 
   const speak = async (text) => {
     if (!voiceActive) return;
@@ -284,7 +296,12 @@ export default function TimetableApp() {
       <header className={styles.header}>
         <div className={styles.headerTop}>
           <h1 className={styles.title}>Thời Khóa Biểu</h1>
-          <div className={styles.date}>{formatDateFull(new Date())}</div>
+          <div className={styles.headerRight}>
+            <div className={styles.date}>{formatDateFull(new Date())}</div>
+            <button className={styles.settingsBtn} onClick={() => setShowSettings(true)}>
+              ⚙️
+            </button>
+          </div>
         </div>
         <button 
           className={`${styles.voiceStatus} ${!voiceActive ? styles.off : ''}`}
@@ -399,11 +416,13 @@ export default function TimetableApp() {
             className={`${styles.micFab} ${listening ? styles.listening : ''}`}
             onClick={toggleMic}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" x2="12" y1="19" y2="22"/>
-            </svg>
+            {listening ? '🔴' : (
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" x2="12" y1="19" y2="22"/>
+              </svg>
+            )}
           </button>
         </div>
 
@@ -418,6 +437,26 @@ export default function TimetableApp() {
           Cả Tuần
         </button>
       </div>
+
+      {showSettings && (
+        <div className={styles.alertOverlay} onClick={() => setShowSettings(false)}>
+          <div className={styles.settingsBox} onClick={e => e.stopPropagation()}>
+            <h3 className={styles.settingsTitle}>Cài Đặt Báo Thức</h3>
+            <div className={styles.settingsRow}>
+              <label>Số lần nhắc lại:</label>
+              <select value={repeats} onChange={(e) => handleRepeatsChange(parseInt(e.target.value, 10))}>
+                <option value={1}>1 Lần</option>
+                <option value={3}>3 Lần</option>
+                <option value={5}>5 Lần</option>
+                <option value={10}>10 Lần</option>
+              </select>
+            </div>
+            <button className={styles.alertBtn} onClick={() => setShowSettings(false)}>
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

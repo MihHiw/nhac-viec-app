@@ -3,6 +3,7 @@ package com.borny.nhacoi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.PowerManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
@@ -19,12 +20,14 @@ public class TtsReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String text = intent.getStringExtra("text");
+        int repeats = intent.getIntExtra("repeats", 1);
         if (text == null || text.isEmpty()) return;
 
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         // Acquire wake lock to keep CPU running during TTS
+        long wakeTime = (repeats * 10 * 1000L) + 10000L;
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "NhacViec::TtsWakeLock");
-        wakeLock.acquire(60 * 1000L /*60 seconds*/);
+        wakeLock.acquire(wakeTime);
 
         // Optional: Also wake up screen
         PowerManager.WakeLock screenLock = pm.newWakeLock(
@@ -44,7 +47,9 @@ public class TtsReceiver extends BroadcastReceiver {
 
                     @Override
                     public void onDone(String utteranceId) {
-                        releaseResources();
+                        if (utteranceId.equals("MessageId_" + (repeats - 1))) {
+                            releaseResources();
+                        }
                     }
 
                     @Override
@@ -53,11 +58,17 @@ public class TtsReceiver extends BroadcastReceiver {
                     }
                 });
 
-                HashMap<String, String> params = new HashMap<>();
-                params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "MessageId");
-
                 String fullText = "Xin thông báo! " + text;
-                tts.speak(fullText, TextToSpeech.QUEUE_FLUSH, params);
+                
+                for (int i = 0; i < repeats; i++) {
+                    HashMap<String, String> p = new HashMap<>();
+                    p.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "MessageId_" + i);
+                    tts.speak(fullText, i == 0 ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD, p);
+                    
+                    if (i < repeats - 1 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        tts.playSilentUtterance(3000, TextToSpeech.QUEUE_ADD, "SilenceId_" + i);
+                    }
+                }
             } else {
                 releaseResources();
             }
