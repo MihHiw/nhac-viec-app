@@ -13,6 +13,12 @@ try {
   console.log('3. Syncing Capacitor...');
   execSync('npx cap sync android', { stdio: 'inherit' });
 
+  console.log('3.5 Fixing Android startup page...');
+  const androidIndex = 'android/app/src/main/assets/public/index.html';
+  if (fs.existsSync(androidIndex)) {
+    fs.writeFileSync(androidIndex, '<script>window.location.replace("app/index.html");</script>');
+  }
+
   console.log('4. Building Android APK...');
   process.chdir('android');
   const gradleCmd = process.platform === 'win32' ? 'gradlew assembleDebug' : './gradlew assembleDebug';
