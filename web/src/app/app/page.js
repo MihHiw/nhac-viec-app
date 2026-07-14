@@ -92,7 +92,11 @@ export default function TimetableApp() {
     // Dynamic imports
     import('@capacitor/core').then(mod => { Capacitor = mod.Capacitor; });
     import('@capacitor-community/text-to-speech').then(mod => { TextToSpeech = mod.TextToSpeech; });
-    import('@capacitor/local-notifications').then(mod => { LocalNotifications = mod.LocalNotifications; });
+    import('@capacitor/local-notifications').then(mod => { 
+      LocalNotifications = mod.LocalNotifications; 
+      // Request permission immediately on load
+      LocalNotifications.requestPermissions();
+    });
 
     // Load tasks
     try {
@@ -139,8 +143,51 @@ export default function TimetableApp() {
     checkAlarmsRef.current = checkAlarms;
   });
 
+  const scheduleNotifications = async (tasksList) => {
+    if (!LocalNotifications) return;
+    try {
+      let permStatus = await LocalNotifications.checkPermissions();
+      if (permStatus.display !== 'granted') {
+        permStatus = await LocalNotifications.requestPermissions();
+        if (permStatus.display !== 'granted') return; // Cannot schedule
+      }
+      
+      const pending = await LocalNotifications.getPending();
+      if (pending.notifications.length > 0) {
+        await LocalNotifications.cancel({ notifications: pending.notifications });
+      }
+
+      const now = new Date();
+      const toSchedule = tasksList.filter(t => {
+        if (t.done || t.notified || !t.time) return false;
+        const d = new Date(t.date);
+        d.setHours(t.time.h, t.time.m, 0, 0);
+        return d > now;
+      }).map(t => {
+        const d = new Date(t.date);
+        d.setHours(t.time.h, t.time.m, 0, 0);
+        return {
+          id: parseInt(t.id.slice(-8), 10) || Math.floor(Math.random() * 1000000),
+          title: 'Nhắc nhở công việc!',
+          body: t.label,
+          schedule: { at: d },
+          smallIcon: "ic_stat_icon_config_sample"
+        };
+      });
+
+      if (toSchedule.length > 0) {
+        await LocalNotifications.schedule({ notifications: toSchedule });
+      }
+    } catch(e) {
+      console.error('LocalNotifications error', e);
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
+    if (tasks.length > 0) {
+      scheduleNotifications(tasks);
+    }
   }, [tasks]);
 
   const speak = async (text) => {
