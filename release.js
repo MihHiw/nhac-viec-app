@@ -8,6 +8,9 @@ try {
   process.chdir('..');
 
   console.log('2. Copying Next.js output to www...');
+  if (fs.existsSync('www')) {
+    fs.rmSync('www', { recursive: true, force: true });
+  }
   fs.cpSync('web/out', 'www', { recursive: true });
 
   console.log('3. Syncing Capacitor...');
@@ -16,7 +19,8 @@ try {
   console.log('3.5 Fixing Android startup page...');
   const androidIndex = 'android/app/src/main/assets/public/index.html';
   if (fs.existsSync(androidIndex)) {
-    fs.writeFileSync(androidIndex, '<script>window.location.replace("app/index.html");</script>');
+    // Thêm timestamp để ép Android WebView không dùng cache cũ
+    fs.writeFileSync(androidIndex, '<script>window.location.replace("app/index.html?v=" + Date.now());</script>');
   }
 
   console.log('4. Building Android APK...');
