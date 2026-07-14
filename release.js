@@ -25,8 +25,8 @@ try {
   execSync(gradleCmd, { stdio: 'inherit' });
   process.chdir('..');
 
-  console.log('5. Copying APK to www directory...');
-  fs.copyFileSync('android/app/build/outputs/apk/debug/app-debug.apk', 'www/app-debug.apk');
+  console.log('5. Build complete! APK is located at: android/app/build/outputs/apk/debug/app-debug.apk');
+  // Removed copying APK to www/ to avoid Cloudflare 25MB limit.
 
   console.log('✅ Done! The Next.js static site and app-debug.apk are ready.');
   console.log('👉 You can now run "git push" to deploy to Cloudflare Pages!');
