@@ -82,7 +82,11 @@ export default function TimetableApp() {
   const [voiceActive, setVoiceActive] = useState(true);
   const [activeAlert, setActiveAlert] = useState(null);
   
+  const [activeTab, setActiveTab] = useState('today');
+  const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
+  
   const recognitionRef = useRef(null);
+  const checkAlarmsRef = useRef(null);
 
   useEffect(() => {
     // Dynamic imports
@@ -119,10 +123,21 @@ export default function TimetableApp() {
       }
     }
 
-    // Tick every 10s to check alarms
-    const interval = setInterval(checkAlarms, 10000);
-    return () => clearInterval(interval);
+    // Smart Battery Optimization: Check at the 0th second of every minute
+    let timerId;
+    const loop = () => {
+      if (checkAlarmsRef.current) checkAlarmsRef.current();
+      const now = new Date();
+      const delay = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds()) + 500; // Add 500ms safety
+      timerId = setTimeout(loop, delay);
+    };
+    loop();
+    return () => clearTimeout(timerId);
   }, []);
+
+  useEffect(() => {
+    checkAlarmsRef.current = checkAlarms;
+  });
 
   useEffect(() => {
     localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
@@ -203,8 +218,16 @@ export default function TimetableApp() {
     });
   };
 
-  const todayTasks = tasks.filter(t => isSameDay(new Date(t.date), new Date()));
-  todayTasks.sort((a,b) => (a.time?a.time.h*60+a.time.m:1e9) - (b.time?b.time.h*60+b.time.m:1e9));
+  const generateWeekDays = () => {
+    const days = [];
+    for (let i = 0; i < 7; i++) days.push(addDays(startOfDay(new Date()), i));
+    return days;
+  };
+  const weekDays = generateWeekDays();
+
+  const displayDate = activeTab === 'today' ? startOfDay(new Date()) : selectedDate;
+  const displayTasks = tasks.filter(t => isSameDay(new Date(t.date), displayDate));
+  displayTasks.sort((a,b) => (a.time?a.time.h*60+a.time.m:1e9) - (b.time?b.time.h*60+b.time.m:1e9));
 
   return (
     <div className={styles.container}>
@@ -235,13 +258,32 @@ export default function TimetableApp() {
         </button>
       </header>
 
+      {activeTab === 'week' && (
+        <div className={styles.weekSelector}>
+          {weekDays.map(d => {
+            const hasTask = tasks.some(t => isSameDay(new Date(t.date), d));
+            return (
+              <div 
+                key={d.toISOString()} 
+                className={`${styles.dayCard} ${isSameDay(d, selectedDate) ? styles.dayActive : ''}`}
+                onClick={() => setSelectedDate(d)}
+              >
+                <div className={styles.dayName}>{d.getDay() === new Date().getDay() ? 'H.nay' : ['CN','T2','T3','T4','T5','T6','T7'][d.getDay()]}</div>
+                <div className={styles.dayDate}>{d.getDate()}</div>
+                {hasTask && <div className={styles.taskDot}></div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className={styles.timeline}>
-        {todayTasks.length === 0 ? (
+        {displayTasks.length === 0 ? (
           <div className={styles.emptyHint}>
-            Hôm nay bạn chưa có lịch trình nào.<br/>Nhấn Micro và nói "Chiều nay đi mua cafe" để thử nhé.
+            {activeTab === 'today' ? 'Hôm nay bạn chưa có lịch trình nào.' : 'Ngày này trống lịch.'}<br/>Nhấn Micro và nói "Chiều nay đi mua cafe" để thử nhé.
           </div>
         ) : (
-          todayTasks.map((t, idx) => {
+          displayTasks.map((t, idx) => {
             const isDone = t.done;
             const now = new Date();
             let isActive = false;
@@ -288,35 +330,56 @@ export default function TimetableApp() {
         )}
       </div>
 
-      <div className={styles.inputArea}>
-        <button 
-          className={`${styles.micBtn} ${listening ? styles.listening : ''}`}
-          onClick={toggleMic}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" x2="12" y1="19" y2="22"/>
+      <div className={styles.textInputWrap}>
+        <input 
+          type="text"
+          className={styles.textInput}
+          placeholder="Hoặc gõ lịch trình vào đây..."
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleProcessTask(inputValue);
+          }}
+        />
+        <button className={styles.textSendBtn} onClick={() => handleProcessTask(inputValue)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/>
           </svg>
         </button>
-        
-        <div className={styles.textInputWrap}>
-          <input 
-            type="text"
-            className={styles.textInput}
-            placeholder="Hoặc gõ lịch trình vào đây..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleProcessTask(inputValue);
-            }}
-          />
-          <button className={styles.textSendBtn} onClick={() => handleProcessTask(inputValue)}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/>
+      </div>
+
+      <div className={styles.bottomBar}>
+        <button 
+          className={`${styles.tabBtn} ${activeTab === 'today' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('today')}
+        >
+          <div className={styles.tabIcon}>🌟</div>
+          Hôm nay
+        </button>
+
+        <div className={styles.fabWrap}>
+          <button 
+            className={`${styles.micFab} ${listening ? styles.listening : ''}`}
+            onClick={toggleMic}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" x2="12" y1="19" y2="22"/>
             </svg>
           </button>
         </div>
+
+        <button 
+          className={`${styles.tabBtn} ${activeTab === 'week' ? styles.tabActive : ''}`}
+          onClick={() => {
+            setActiveTab('week');
+            setSelectedDate(startOfDay(new Date()));
+          }}
+        >
+          <div className={styles.tabIcon}>📅</div>
+          Cả Tuần
+        </button>
       </div>
     </div>
   );
