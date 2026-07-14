@@ -34,7 +34,20 @@ export default function RootLayout({ children }) {
     <html lang="vi" className={`${inter.variable} ${fraunces.variable}`}>
       <body>
         {children}
-        <script dangerouslySetInnerHTML={{__html: `if('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(()=>{}); }); }`}} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          if('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for(let registration of registrations) {
+                registration.unregister();
+              }
+            });
+          }
+          if('caches' in window) {
+            caches.keys().then(function(names) {
+              for (let name of names) caches.delete(name);
+            });
+          }
+        ` }} />
       </body>
     </html>
   );
