@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/MihHiw/nhac-viec-app#readme",
   "dependencies": {
+    "@capacitor-community/text-to-speech": "^5.1.0",
     "@capacitor/android": "^6.2.1",
     "@capacitor/core": "^6.2.1",
     "@capacitor/local-notifications": "^6.1.3"
