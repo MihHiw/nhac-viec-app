@@ -1,0 +1,55 @@
+.blob1 { position: absolute; top: -100px; left: -100px; width: 400px; height: 400px; background: rgba(79,189,186,0.15); border-radius: 50%; filter: blur(100px); z-index: -1; }
+.blob2 { position: absolute; bottom: 100px; right: -50px; width: 500px; height: 500px; background: rgba(232,163,61,0.1); border-radius: 50%; filter: blur(120px); z-index: -1; }
+
+.header { padding: 30px 8%; display: flex; justify-content: space-between; align-items: center; }
+.logo { display: flex; align-items: center; gap: 12px; font-family: var(--font-fraunces), serif; font-size: 24px; font-weight: 700; }
+.logo svg { width: 28px; height: 28px; color: var(--accent); }
+.webLink { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.webLink:hover { color: var(--text); }
+
+.main { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 40px 8% 80px; gap: 60px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+.heroText { flex: 1; max-width: 600px; }
+.badge { display: inline-block; padding: 6px 14px; border-radius: 99px; background: rgba(79,189,186,0.1); color: var(--primary); font-size: 13px; font-weight: 600; margin-bottom: 24px; }
+.heroText h1 { font-family: var(--font-fraunces), serif; font-size: 64px; line-height: 1.1; margin-bottom: 24px; font-weight: 700; }
+.heroText h1 span { color: var(--primary); }
+.desc { font-size: 18px; color: var(--text-muted); line-height: 1.6; margin-bottom: 40px; }
+
+.btnGroup { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.btnDownload { display: flex; align-items: center; gap: 12px; background: var(--primary); color: #000; text-decoration: none; padding: 16px 32px; border-radius: 99px; font-size: 16px; font-weight: 600; box-shadow: 0 8px 30px rgba(79,189,186,0.3); transition: transform 0.2s, box-shadow 0.2s; border: none; cursor: pointer; }
+.btnDownload:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(79,189,186,0.4); }
+.btnDownload svg { width: 24px; height: 24px; }
+.note { font-size: 13px; color: var(--text-muted); margin-top: 16px; }
+
+/* Phone Mockup */
+.heroVisual { flex: 1; display: flex; justify-content: center; perspective: 1000px; }
+.phone { width: 300px; height: 600px; background: #12141c; border-radius: 40px; border: 8px solid #232838; box-shadow: -20px 30px 60px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.05); position: relative; overflow: hidden; transform: rotateY(-15deg) rotateX(5deg); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.phone:hover { transform: rotateY(-5deg) rotateX(2deg) translateY(-10px); }
+.notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background: #232838; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 10; }
+
+.pHeader { padding: 40px 20px 20px; border-bottom: 1px solid #2b3040; display: flex; align-items: center; gap: 12px; }
+.pIcon { width: 32px; height: 32px; background: rgba(232,163,61,0.16); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.pIcon svg { width: 16px; height: 16px; color: var(--accent); }
+.pTitle { font-family: var(--font-fraunces), serif; font-size: 18px; font-weight: 600; }
+
+.pChat { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.pMsg { max-width: 80%; padding: 12px 14px; border-radius: 16px; font-size: 13px; line-height: 1.4; }
+.pMsgUser { background: #232838; align-self: flex-end; border-bottom-right-radius: 4px; }
+.pMsgBot { background: rgba(79,189,186,0.1); border: 1px solid rgba(79,189,186,0.2); align-self: flex-start; border-bottom-left-radius: 4px; }
+
+.pInput { position: absolute; bottom: 20px; left: 20px; right: 20px; height: 48px; background: #1b1e2a; border-radius: 24px; border: 1px solid #2b3040; display: flex; align-items: center; padding: 0 16px; justify-content: space-between; }
+.pInputText { color: #8b91a8; font-size: 13px; }
+.pSend { width: 28px; height: 28px; background: var(--accent); border-radius: 50%; }
+
+@media (max-width: 968px) {
+  .main { flex-direction: column; text-align: center; padding-top: 20px; }
+  .heroText h1 { font-size: 48px; }
+  .btnGroup { justify-content: center; }
+  .heroText { margin-bottom: 40px; }
+  .phone { transform: rotateY(0) rotateX(0); }
+  .phone:hover { transform: translateY(-10px); }
+}
+@media (max-width: 480px) {
+  .heroText h1 { font-size: 36px; }
+  .header { padding: 20px; }
+}

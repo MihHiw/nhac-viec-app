@@ -2,23 +2,28 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 
 try {
-  console.log('1. Building JS bundle...');
+  console.log('1. Building Next.js Web App...');
+  process.chdir('web');
   execSync('npm run build', { stdio: 'inherit' });
+  process.chdir('..');
 
-  console.log('2. Syncing Capacitor...');
+  console.log('2. Copying Next.js output to www...');
+  fs.cpSync('web/out', 'www', { recursive: true });
+
+  console.log('3. Syncing Capacitor...');
   execSync('npx cap sync android', { stdio: 'inherit' });
 
-  console.log('3. Building Android APK...');
+  console.log('4. Building Android APK...');
   process.chdir('android');
   const gradleCmd = process.platform === 'win32' ? 'gradlew assembleDebug' : './gradlew assembleDebug';
   execSync(gradleCmd, { stdio: 'inherit' });
   process.chdir('..');
 
-  console.log('4. Copying APK to www directory...');
+  console.log('5. Copying APK to www directory...');
   fs.copyFileSync('android/app/build/outputs/apk/debug/app-debug.apk', 'www/app-debug.apk');
 
-  console.log('✅ Done! The file www/app-debug.apk is ready.');
-  console.log('👉 You can now run "git push" to deploy to Netlify!');
+  console.log('✅ Done! The Next.js static site and app-debug.apk are ready.');
+  console.log('👉 You can now run "git push" to deploy to Cloudflare Pages!');
 } catch (e) {
   console.error('❌ Build failed:', e.message);
   process.exit(1);
