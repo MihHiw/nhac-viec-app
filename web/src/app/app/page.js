@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
 
-let Capacitor, BackgroundTts, TextToSpeech;
+let Capacitor, BackgroundTts, TextToSpeech, SpeechRecognitionPlugin;
 
 const STORE_KEY = 'nhacoi_tasks_v2';
 const STORE_KEY_REPEATS = 'nhacoi_repeats_v1';
@@ -101,6 +101,7 @@ export default function TimetableApp() {
       BackgroundTts = Capacitor.Plugins.BackgroundTts;
     });
     import('@capacitor-community/text-to-speech').then(mod => { TextToSpeech = mod.TextToSpeech; });
+    import('@capacitor-community/speech-recognition').then(mod => { SpeechRecognitionPlugin = mod.SpeechRecognition; });
 
     // Load tasks
     try {
@@ -205,8 +206,8 @@ export default function TimetableApp() {
   const speak = async (text) => {
     if (!voiceActive) return;
     try {
-      if (Capacitor?.isNative && TextToSpeech) {
-        await TextToSpeech.speak({ text, lang: 'vi-VN', rate: 1.0 });
+      if (Capacitor?.isNativePlatform?.() && TextToSpeech) {
+        await TextToSpeech.speak({ text, lang: 'vi-VN', rate: 1.0, category: 'alarm' });
       } else if ('speechSynthesis' in window) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'vi-VN';
@@ -238,17 +239,60 @@ export default function TimetableApp() {
     }
   };
 
+  const startMic = async () => {
+    try {
+      if (Capacitor?.isNativePlatform?.() && SpeechRecognitionPlugin) {
+        const perm = await SpeechRecognitionPlugin.checkPermissions();
+        if (perm.speechRecognition !== 'granted') {
+          await SpeechRecognitionPlugin.requestPermissions();
+        }
+        
+        setListening(true);
+        SpeechRecognitionPlugin.start({
+          language: 'vi-VN',
+          maxResults: 1,
+          prompt: 'Nói công việc cần nhắc...',
+          partialResults: false,
+          popup: true,
+        }).then(result => {
+          if (result && result.matches && result.matches.length > 0) {
+            handleProcessTask(result.matches[0]);
+          }
+          setListening(false);
+        }).catch(err => {
+          console.error("Speech error", err);
+          setListening(false);
+        });
+      } else {
+        if (recognitionRef.current) {
+          recognitionRef.current.start();
+          setListening(true);
+        } else {
+          alert('Trình duyệt không hỗ trợ nhận diện giọng nói');
+        }
+      }
+    } catch(e) {
+      console.error("Cannot start mic", e);
+      setListening(false);
+    }
+  };
+
+  const stopMic = async () => {
+    try {
+      if (Capacitor?.isNativePlatform?.() && SpeechRecognitionPlugin) {
+        await SpeechRecognitionPlugin.stop();
+      } else {
+        recognitionRef.current?.stop();
+      }
+      setListening(false);
+    } catch(e) {}
+  };
+
   const toggleMic = () => {
     if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
+      stopMic();
     } else {
-      try {
-        recognitionRef.current?.start();
-        setListening(true);
-      } catch(e) {
-        console.error("Cannot start mic", e);
-      }
+      startMic();
     }
   };
 
