@@ -40,11 +40,13 @@ public class BackgroundTtsPlugin extends Plugin {
                 String text = t.getString("text");
                 long at = t.getLong("at");
                 int repeats = t.optInt("repeats", 1); // default to 1
+                int volume = t.optInt("volume", 100);
 
                 Intent intent = new Intent(context, TtsReceiver.class);
                 intent.putExtra("id", id);
                 intent.putExtra("text", text);
                 intent.putExtra("repeats", repeats);
+                intent.putExtra("volume", volume);
 
                 int flags = PendingIntent.FLAG_UPDATE_CURRENT;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

@@ -16,11 +16,14 @@ public class TtsReceiver extends BroadcastReceiver {
 
     private TextToSpeech tts;
     private PowerManager.WakeLock wakeLock;
+    private android.media.AudioManager audioManager;
+    private int originalVolume = -1;
 
     @Override
     public void onReceive(Context context, Intent intent) {
         String text = intent.getStringExtra("text");
         int repeats = intent.getIntExtra("repeats", 1);
+        int volume = intent.getIntExtra("volume", 100);
         if (text == null || text.isEmpty()) return;
 
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
@@ -35,6 +38,18 @@ public class TtsReceiver extends BroadcastReceiver {
                 "NhacViec::ScreenLock"
         );
         screenLock.acquire(10 * 1000L); // 10 seconds
+
+        audioManager = (android.media.AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        if (audioManager != null) {
+            try {
+                originalVolume = audioManager.getStreamVolume(android.media.AudioManager.STREAM_ALARM);
+                int maxVol = audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_ALARM);
+                int targetVol = (int) (maxVol * (volume / 100.0f));
+                audioManager.setStreamVolume(android.media.AudioManager.STREAM_ALARM, targetVol, 0);
+            } catch (Exception e) {
+                Log.e("TtsReceiver", "Cannot set volume", e);
+            }
+        }
 
         tts = new TextToSpeech(context.getApplicationContext(), status -> {
             if (status == TextToSpeech.SUCCESS) {
@@ -63,6 +78,11 @@ public class TtsReceiver extends BroadcastReceiver {
                 for (int i = 0; i < repeats; i++) {
                     HashMap<String, String> p = new HashMap<>();
                     p.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "MessageId_" + i);
+                    p.put(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(android.media.AudioManager.STREAM_ALARM));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        p.put(TextToSpeech.Engine.KEY_PARAM_VOLUME, String.valueOf(volume / 100.0f));
+                    }
+                    
                     tts.speak(fullText, i == 0 ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD, p);
                     
                     if (i < repeats - 1 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -80,6 +100,11 @@ public class TtsReceiver extends BroadcastReceiver {
     }
 
     private void releaseResources() {
+        if (audioManager != null && originalVolume != -1) {
+            try {
+                audioManager.setStreamVolume(android.media.AudioManager.STREAM_ALARM, originalVolume, 0);
+            } catch (Exception e) {}
+        }
         if (tts != null) {
             tts.stop();
             tts.shutdown();

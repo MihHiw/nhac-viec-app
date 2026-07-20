@@ -6,6 +6,7 @@ let Capacitor, BackgroundTts, TextToSpeech;
 
 const STORE_KEY = 'nhacoi_tasks_v2';
 const STORE_KEY_REPEATS = 'nhacoi_repeats_v1';
+const STORE_KEY_VOLUME = 'nhacoi_volume_v1';
 
 const WEEKDAYS = { 'chủ nhật':0, 'cn':0, 'thứ 2':1,'thứ hai':1,'thứ 3':2,'thứ ba':2,'thứ 4':3,'thứ tư':3,
   'thứ 5':4,'thứ năm':4,'thứ 6':5,'thứ sáu':5,'thứ 7':6,'thứ bảy':6 };
@@ -84,6 +85,7 @@ export default function TimetableApp() {
   const [activeAlert, setActiveAlert] = useState(null);
   
   const [repeats, setRepeats] = useState(1);
+  const [volume, setVolume] = useState(100);
   const [showSettings, setShowSettings] = useState(false);
 
   const [activeTab, setActiveTab] = useState('today');
@@ -106,6 +108,8 @@ export default function TimetableApp() {
       setTasks(stored);
       const storedRepeats = parseInt(localStorage.getItem(STORE_KEY_REPEATS), 10);
       if (storedRepeats) setRepeats(storedRepeats);
+      const storedVolume = parseInt(localStorage.getItem(STORE_KEY_VOLUME), 10);
+      if (storedVolume && !isNaN(storedVolume)) setVolume(storedVolume);
     } catch(e) {}
 
     // Init Speech Recognition
@@ -163,7 +167,8 @@ export default function TimetableApp() {
           id: parseInt(t.id.slice(-8), 10) || Math.floor(Math.random() * 1000000),
           text: t.label,
           at: d.getTime(),
-          repeats: repeats
+          repeats: repeats,
+          volume: volume
         };
       });
 
@@ -185,11 +190,16 @@ export default function TimetableApp() {
     if (tasks.length > 0) {
       scheduleNotifications(tasks);
     }
-  }, [tasks, repeats]);
+  }, [tasks, repeats, volume]);
 
   const handleRepeatsChange = (val) => {
     setRepeats(val);
     localStorage.setItem(STORE_KEY_REPEATS, val.toString());
+  };
+
+  const handleVolumeChange = (val) => {
+    setVolume(val);
+    localStorage.setItem(STORE_KEY_VOLUME, val.toString());
   };
 
   const speak = async (text) => {
@@ -450,6 +460,15 @@ export default function TimetableApp() {
                 <option value={5}>5 Lần</option>
                 <option value={10}>10 Lần</option>
               </select>
+            </div>
+            <div className={styles.settingsRow}>
+              <label>Âm lượng báo ({volume}%):</label>
+              <input 
+                type="range" 
+                min="10" max="100" step="10" 
+                value={volume} 
+                onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))} 
+              />
             </div>
             <button className={styles.alertBtn} onClick={() => setShowSettings(false)}>
               Đóng
